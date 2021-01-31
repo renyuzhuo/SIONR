@@ -88,12 +88,13 @@ def get_features(video_data, frame_batch_size=64, device=torch.device('cuda:0'))
 if __name__ == "__main__":
     parser = ArgumentParser(description='Extracting high-level features')
     parser.add_argument('--database', type=str, default='KoNViD-1k')
+    parser.add_argument('--videos_dir', type=str, default='KoNViD-1k')
     parser.add_argument('--frame_batch_size', type=int, default=32)
     parser.add_argument('--gpu_device', type=str, default='cuda:1')
     args = parser.parse_args()
 
     if args.database == 'KoNViD-1k':
-        args.videos_dir = '../../database/KoNViD_1k_videos/'
+        args.videos_dir = args.videos_dir
         args.features_dir = 'data/CNN_features_KoNViD-1k/'
         info = pd.read_csv('data/KoNViD_1k_attributes.csv')
         file_names = info['flickr_id'].values
