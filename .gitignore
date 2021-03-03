@@ -1,0 +1,4 @@
+*.zip
+KoNViD_1k_videos/
+__pycache__/
+*.csv

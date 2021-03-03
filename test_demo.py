@@ -14,10 +14,10 @@ parser.add_argument('--test_batch_size', type=int, default=1)
 parser.add_argument('--num_workers', type=int, default=3)
 args = parser.parse_args()
 
-if args.database == 'KoNViD-1k':
-    video_dir = '../../database/KoNViD_1k_videos/'
-    feature_dir = 'data/CNN_features_KoNViD-1k/'
-    info = pd.read_csv('data/KoNViD_1k_attributes.csv')
+if args.database == '/content/SIONR/KoNViD_1k_videos':
+    video_dir = '/content/SIONR/KoNViD_1k_videos/'
+    feature_dir = '/content/drive/MyDrive/KoNViD/data/CNN_features_KoNViD-1k/'
+    info = pd.read_csv('/content/drive/MyDrive/KoNViD/data/KoNViD_1k_attributes.csv')
     file_names = info['flickr_id'].values
     video_name = [str(k) + '.mp4' for k in file_names]
     video_name = np.array(video_name)
@@ -43,9 +43,9 @@ model_file = 'model/SIONR.pt'
 VQA_model.load_state_dict(torch.load(model_file))
 VQA_model = VQA_model.to(device)
 
-test_dataset = VideoFeatureDataset(idx_list=test_idx, database_info=args.database_info)
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=args.test_batch_size,
-                                          num_workers=args.num_workers)
+test_dataset = VideoFeatureDataset(idx_list=test_idx, database_info=database_info)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=1,
+                                          num_workers=3)
 
 # test
 y_predict = np.zeros(len(test_idx))
@@ -69,6 +69,9 @@ y_predict = fit_function(y_predict, y_label)
 test_PLCC = stats.pearsonr(y_predict, y_label)[0]
 test_SROCC = stats.spearmanr(y_predict, y_label)[0]
 test_RMSE = np.sqrt((((y_predict - y_label) * args.scale) ** 2).mean())
+  
+print("test_SROCC:",test_SROCC)
+print("test_PLCC:",test_PLCC)
 
 result_excel = 'result/test_result.xlsx'
 result = pd.DataFrame()
