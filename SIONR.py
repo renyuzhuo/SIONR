@@ -106,7 +106,8 @@ class SIONR(nn.Module):
         score = self.fc(out)
         score = torch.mean(score, dim=[1, 2])
         return score
-'''
+
+        '''
         # hierarchical feature fusion
         score = self.fc(torch.cat((out_feature_L, out_feature_H), dim=2))
 
@@ -114,3 +115,4 @@ class SIONR(nn.Module):
         score = torch.mean(score, dim=[1, 2])
 
         return score
+        '''
