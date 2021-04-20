@@ -41,7 +41,7 @@ class SIONR(nn.Module):
         self.high = nn.Sequential(
             nn.Linear(in_features=2048, out_features=1024),
             nn.LeakyReLU(inplace=inplace),
-            nn.Linear(in_features=1024, out_features=128),
+            nn.Linear(in_features=1024, out_features=512),
             nn.LeakyReLU(inplace=inplace),
         )
 
@@ -56,7 +56,7 @@ class SIONR(nn.Module):
         )
 
         self.fc = nn.Sequential(
-            nn.Linear(in_features=64 + 128, out_features=64),
+            nn.Linear(in_features=512, out_features=64),
             nn.LeakyReLU(inplace=inplace),
             nn.Linear(in_features=64, out_features=1),
             nn.LeakyReLU(inplace=inplace),
@@ -92,10 +92,21 @@ class SIONR(nn.Module):
         # spatiotemporal feature fusion
         out_feature_L = self.temporal(out_feature1) * self.spatial(out_feature2)
 
+        
+        
         # high-level temporal variation
         feature_abs = torch.abs(feature[:, 0::2] - feature[:, 1::2])
         out_feature_H = self.high(feature_abs)
 
+        encoder_layer = nn.TransformerEncoderLayer(d_model=512, nhead=8)
+        transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=6)
+        out = transformer_encoder(out_feature_H)
+        print("transencoder:", out)
+
+        score = self.fc(out)
+        score = torch.mean(score, dim=[1, 2])
+        return score
+'''
         # hierarchical feature fusion
         score = self.fc(torch.cat((out_feature_L, out_feature_H), dim=2))
 
