@@ -20,7 +20,7 @@ def kaiming_init(m):
         if m.bias is not None:
             m.bias.data.fill_(0)
 
-
+'''
 class PositionalEncoding(nn.Module):
 
     def __init__(self, d_model, dropout=0.1, max_len=5000):
@@ -86,6 +86,8 @@ class TransformerModel(nn.Module):
         #output = self.decoder(output)
         #return F.log_softmax(output, dim=-1)
         return output
+'''
+
 class SIONR(nn.Module):
     def __init__(self, inplace=True):  #low level feature
         super(SIONR, self).__init__()
@@ -125,16 +127,14 @@ class SIONR(nn.Module):
         )
 
         self.fc = nn.Sequential(
-            nn.Linear(in_features=128 + 64, out_features=64), # FC5 high + low
+            nn.Linear(in_features=128, out_features=64), # FC5 high + low
             nn.LeakyReLU(inplace=inplace),
             nn.Linear(in_features=64, out_features=1),  #FC6 score
             nn.LeakyReLU(inplace=inplace),
         )
 
-
-        self.Transformer = TransformerModel()
-
         self.weight_init()
+
 
     def weight_init(self):
         initializer = kaiming_init
@@ -174,13 +174,18 @@ class SIONR(nn.Module):
         # high-level temporal variation
         feature_abs = torch.abs(feature[:, 0::2] - feature[:, 1::2])
         out_feature_H = self.high(feature_abs)
+        
+        
 
         # hierarchical feature fusion
         # score = self.fc(torch.cat((out_feature_L, out_feature_H), dim=2)) #dim=0,行；dim=1，列；dim=3，第三维度
-
+ 
+        '''
         out_feature = self.Transformer(out_feature_H)
         score = self.fc(out_feature)
         print("transformer:",score)
+        '''
+        score = self.fc(out_feature_H)
 
         # mean pooling
         score = torch.mean(score, dim=[1, 2])
