@@ -3,24 +3,9 @@ import torch.nn as nn
 import torch
 import torch.nn.init as init
 import torch.nn.functional as F
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
-
-
-def kaiming_init(m):
-    if isinstance(m, (nn.Conv2d, nn.Conv3d)):
-        init.kaiming_normal_(m.weight, nonlinearity='relu')
-        if m.bias is not None:
-            m.bias.data.fill_(0)
-    elif isinstance(m, nn.Linear):
-        init.kaiming_normal_(m.weight, nonlinearity='leaky_relu')
-        if m.bias is not None:
-            m.bias.data.fill_(0)
-    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d)):
-        m.weight.data.fill_(1)
-        if m.bias is not None:
-            m.bias.data.fill_(0)
-
-'''
+#位置编码，对序列顺序进行约束（word position编码为d_madel维向量）
 class PositionalEncoding(nn.Module):
 
     def __init__(self, d_model, dropout=0.1, max_len=5000):
@@ -28,6 +13,7 @@ class PositionalEncoding(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         pe = torch.zeros(max_len, d_model)
+        #词语在序列中的位置position
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
         pe[:, 0::2] = torch.sin(position * div_term)
@@ -43,16 +29,17 @@ class PositionalEncoding(nn.Module):
 class TransformerModel(nn.Module):
     """Container module with an encoder, a recurrent or transformer module, and a decoder."""
 
-    def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
+    def __init__(self,
+                 ntoken,
+                 ninp=512,
+                 nhead=8,
+                 nhid=2048,
+                 nlayers=6,
+                 dropout=0.5):
         super(TransformerModel, self).__init__()
-        try:
-            from torch.nn import TransformerEncoder, TransformerEncoderLayer
-        except:
-            raise ImportError('TransformerEncoder module does not exist in PyTorch 1.1 or lower.')
-        self.model_type = 'Transformer'
         self.src_mask = None
-        self.pos_encoder = PositionalEncoding(ninp, dropout)
-        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
+        self.pos_encoder = PositionalEncoding(ninp, dropout) #ninp 词向量维度
+        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout) #d_model,nhead,dim_feedforward
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         self.encoder = nn.Embedding(ntoken, ninp)
         self.ninp = ninp
@@ -84,9 +71,23 @@ class TransformerModel(nn.Module):
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, self.src_mask)
         #output = self.decoder(output)
-        #return F.log_softmax(output, dim=-1)
         return output
-'''
+
+
+
+def kaiming_init(m):
+    if isinstance(m, (nn.Conv2d, nn.Conv3d)):
+        init.kaiming_normal_(m.weight, nonlinearity='relu')
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+    elif isinstance(m, nn.Linear):
+        init.kaiming_normal_(m.weight, nonlinearity='leaky_relu')
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d)):
+        m.weight.data.fill_(1)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
 
 class SIONR(nn.Module):
     def __init__(self, inplace=True):  #low level feature
@@ -127,7 +128,7 @@ class SIONR(nn.Module):
         )
 
         self.fc = nn.Sequential(
-            nn.Linear(in_features=128, out_features=64), # FC5 high + low
+            nn.Linear(in_features= 128, out_features=64), # FC5 high + low
             nn.LeakyReLU(inplace=inplace),
             nn.Linear(in_features=64, out_features=1),  #FC6 score
             nn.LeakyReLU(inplace=inplace),
@@ -135,20 +136,15 @@ class SIONR(nn.Module):
 
         self.weight_init()
 
-
     def weight_init(self):
         initializer = kaiming_init
         for block in self._modules:
             for m in self._modules[block]:
                     initializer(m)
 
-    def loss_build(self, x_hat, x):
-        distortion = F.mse_loss(x_hat, x, size_average=True)
-        return distortion
 
-    def forward(self, video, feature, label, requires_loss):
+    def forward(self, video, feature):
         # batch_size, channel, depth, height, width
-        
         out_tensor = self.conv1(video)
         out_tensor = self.conv2(out_tensor)
         out_tensor = self.conv3(out_tensor)
@@ -168,29 +164,26 @@ class SIONR(nn.Module):
 
         # spatiotemporal feature fusion
         out_feature_L = self.temporal(out_feature1) * self.spatial(out_feature2)
-        
-
 
         # high-level temporal variation
         feature_abs = torch.abs(feature[:, 0::2] - feature[:, 1::2])
         out_feature_H = self.high(feature_abs)
-        
-        
 
         # hierarchical feature fusion
         # score = self.fc(torch.cat((out_feature_L, out_feature_H), dim=2)) #dim=0,行；dim=1，列；dim=3，第三维度
- 
-        '''
-        out_feature = self.Transformer(out_feature_H)
+
+        out_feature = TransformerModel(out_feature_H)
         score = self.fc(out_feature)
         print("transformer:",score)
-        '''
-        score = self.fc(out_feature_H)
 
         # mean pooling
         score = torch.mean(score, dim=[1, 2])
 
         return score
+
+
+
+
 
 
 
