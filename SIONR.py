@@ -113,7 +113,7 @@ class SIONR(nn.Module):
             nn.Linear(in_features=2048, out_features=1024), #FC1
             nn.LeakyReLU(inplace=inplace),
             #nn.Linear(in_features=1024, out_features=128), #FC2
-            nn.Linear(in_features=1024, out_features=128),
+            nn.Linear(in_features=1024, out_features=512),
             nn.LeakyReLU(inplace=inplace),
         )
 
