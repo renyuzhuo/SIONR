@@ -30,7 +30,7 @@ class TransformerModel(nn.Module):
     """Container module with an encoder, a recurrent or transformer module, and a decoder."""
 
     def __init__(self,
-                 ntoken,
+                 ntoken=100,
                  ninp=512,
                  nhead=8,
                  nhid=2048,
@@ -174,7 +174,6 @@ class SIONR(nn.Module):
 
         out_feature = TransformerModel(out_feature_H)
         score = self.fc(out_feature)
-        print("transformer:",score)
 
         # mean pooling
         score = torch.mean(score, dim=[1, 2])
