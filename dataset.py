@@ -6,7 +6,7 @@ import torch
 
 
 class VideoFeatureDataset(Dataset):
-    def __init__(self, idx_list, database_info, frame_sample_n=100):
+    def __init__(self, idx_list, database_info, frame_sample_n=8):
         super(VideoFeatureDataset, self).__init__()
         video_name = database_info['video_name']
         mos = database_info['mos']
